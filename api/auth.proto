@@ -1,0 +1,167 @@
+syntax = "proto3";
+
+package auth;
+
+option go_package = "github.com/polyid/auth/api";
+
+import "google/protobuf/timestamp.proto";
+
+// Auth service provides authentication and authorization functionality
+service Auth {
+  // Authenticate authenticates a user and returns a session token
+  rpc Authenticate(AuthenticateRequest) returns (AuthenticateResponse);
+  
+  // ValidateToken validates an authentication token
+  rpc ValidateToken(ValidateTokenRequest) returns (ValidateTokenResponse);
+  
+  // RegisterPasskey initiates passkey registration
+  rpc RegisterPasskey(RegisterPasskeyRequest) returns (RegisterPasskeyResponse);
+  
+  // VerifyPasskey verifies a passkey registration
+  rpc VerifyPasskey(VerifyPasskeyRequest) returns (VerifyPasskeyResponse);
+  
+  // AddMFAMethod adds a new MFA method
+  rpc AddMFAMethod(AddMFAMethodRequest) returns (AddMFAMethodResponse);
+  
+  // VerifyMFAMethod verifies an MFA method setup
+  rpc VerifyMFAMethod(VerifyMFAMethodRequest) returns (VerifyMFAMethodResponse);
+  
+  // RemoveMFAMethod removes an MFA method
+  rpc RemoveMFAMethod(RemoveMFAMethodRequest) returns (RemoveMFAMethodResponse);
+  
+  // GetMFAMethods retrieves a user's MFA methods
+  rpc GetMFAMethods(GetMFAMethodsRequest) returns (GetMFAMethodsResponse);
+}
+
+// User represents a user in the system
+message User {
+  string id = 1;
+  string email = 2;
+  google.protobuf.Timestamp created_at = 3;
+  google.protobuf.Timestamp updated_at = 4;
+}
+
+// AuthenticateRequest represents an authentication request
+message AuthenticateRequest {
+  string email = 1;
+  oneof auth_method {
+    string password = 2;
+    PasskeyCredential passkey = 3;
+  }
+  string mfa_code = 4; // Optional MFA code
+}
+
+// AuthenticateResponse represents an authentication response
+message AuthenticateResponse {
+  string token = 1;
+  int64 expires_at = 2;
+  User user = 3;
+  bool requires_mfa = 4;
+}
+
+// ValidateTokenRequest represents a token validation request
+message ValidateTokenRequest {
+  string token = 1;
+}
+
+// ValidateTokenResponse represents a token validation response
+message ValidateTokenResponse {
+  bool valid = 1;
+  User user = 2;
+}
+
+// PasskeyOptions represents WebAuthn registration options
+message PasskeyOptions {
+  string challenge = 1;
+  string rp_id = 2;
+  string rp_name = 3;
+  repeated string allowed_credentials = 4;
+  string user_verification = 5;
+  string attestation = 6;
+}
+
+// PasskeyCredential represents a WebAuthn credential
+message PasskeyCredential {
+  string id = 1;
+  bytes raw_id = 2;
+  string type = 3;
+  bytes response = 4;
+}
+
+// RegisterPasskeyRequest represents a passkey registration request
+message RegisterPasskeyRequest {
+  string user_id = 1;
+}
+
+// RegisterPasskeyResponse represents a passkey registration response
+message RegisterPasskeyResponse {
+  PasskeyOptions options = 1;
+}
+
+// VerifyPasskeyRequest represents a passkey verification request
+message VerifyPasskeyRequest {
+  string user_id = 1;
+  PasskeyCredential credential = 2;
+}
+
+// VerifyPasskeyResponse represents a passkey verification response
+message VerifyPasskeyResponse {
+  bool success = 1;
+}
+
+// MFAMethod represents an MFA method
+message MFAMethod {
+  string id = 1;
+  string type = 2;
+  google.protobuf.Timestamp created_at = 3;
+}
+
+// MFASetupData represents MFA setup data
+message MFASetupData {
+  string type = 1;
+  string data = 2;
+}
+
+// AddMFAMethodRequest represents an MFA method addition request
+message AddMFAMethodRequest {
+  string user_id = 1;
+  string method = 2; // "totp", "sms", "app_link"
+}
+
+// AddMFAMethodResponse represents an MFA method addition response
+message AddMFAMethodResponse {
+  MFASetupData setup_data = 1;
+}
+
+// VerifyMFAMethodRequest represents an MFA method verification request
+message VerifyMFAMethodRequest {
+  string user_id = 1;
+  string method = 2;
+  string code = 3;
+}
+
+// VerifyMFAMethodResponse represents an MFA method verification response
+message VerifyMFAMethodResponse {
+  bool success = 1;
+}
+
+// RemoveMFAMethodRequest represents an MFA method removal request
+message RemoveMFAMethodRequest {
+  string user_id = 1;
+  string method_id = 2;
+}
+
+// RemoveMFAMethodResponse represents an MFA method removal response
+message RemoveMFAMethodResponse {
+  bool success = 1;
+}
+
+// GetMFAMethodsRequest represents an MFA methods retrieval request
+message GetMFAMethodsRequest {
+  string user_id = 1;
+}
+
+// GetMFAMethodsResponse represents an MFA methods retrieval response
+message GetMFAMethodsResponse {
+  repeated MFAMethod methods = 1;
+} 
